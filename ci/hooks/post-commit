@@ -1,0 +1,20 @@
+#!/bin/sh
+# Trigger Jenkins after a local commit. Never fail the commit.
+root=$(git rev-parse --show-toplevel)
+ps1="$root/ci/trigger-jenkins.ps1"
+
+if command -v powershell.exe >/dev/null 2>&1; then
+  win=$ps1
+  if command -v wslpath >/dev/null 2>&1; then
+    win=$(wslpath -w "$ps1")
+  fi
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$win" || true
+  exit 0
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -File "$ps1" || true
+  exit 0
+fi
+
+exit 0

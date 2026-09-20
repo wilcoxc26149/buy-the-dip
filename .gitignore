@@ -15,6 +15,7 @@ blob-report/
 .env
 .env.*
 !.env.example
+.jenkins-token
 .DS_Store
 Thumbs.db
 .idea/
