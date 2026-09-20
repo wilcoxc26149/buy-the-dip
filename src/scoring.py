@@ -52,6 +52,8 @@ def quality_score(fundamentals: Fundamentals, *, universe_prior: float = 50.0) -
     # Names in the quality universe get a modest prior so a missing Yahoo
     # info payload does not zero out an otherwise liquid franchise.
     blended = 0.82 * raw + 0.18 * universe_prior
+    if not complete:
+        blended = max(blended, universe_prior + 5.0)
     return _clip(blended), complete
 
 

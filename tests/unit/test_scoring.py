@@ -4,6 +4,13 @@ from src.models import Fundamentals
 from src.scoring import buy_in_price, confidence_score, quality_score, sell_out_price
 
 
+def test_missing_fundamentals_do_not_fail_the_quality_floor():
+    sparse = Fundamentals(name="Unknown Franchise", sector="Technology")
+    score, complete = quality_score(sparse)
+    assert complete is False
+    assert score >= 50
+
+
 def test_quality_score_prefers_strong_operators():
     strong = Fundamentals(
         name="Strong",

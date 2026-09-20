@@ -23,6 +23,13 @@ def test_max_quote_price_filters_expensive_names():
     assert all(item.buy_in <= 90 for item in cheap)
 
 
+def test_tight_max_price_still_returns_affordable_names():
+    results = screen(70, 90, 5, provider=FixtureProvider())
+    assert results
+    assert all(item.current_price <= 70 for item in results)
+    assert {item.ticker for item in results} <= {"KO", "NEE", "XOM", "PG", "JPM", "AAPL"}
+
+
 def test_buy_in_and_sell_out_are_actionable():
     results = screen(250, 120, 5, provider=FixtureProvider())
     for item in results:
