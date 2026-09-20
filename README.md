@@ -99,11 +99,11 @@ python -m pytest tests/e2e
 
 ## Jenkins
 
-The `Jenkinsfile` is a Pipeline job:
+The `Jenkinsfile` tests the local working tree on the `windows-host` agent (`C:\Users\wilco\projects\buy-the-dip`). It does not clone GitHub.
 
 1. Install Jenkins plus the **Pipeline**, **Git**, and **JUnit** plugins.
-2. New item → Pipeline → Pipeline script from SCM → Git → this repository → `Jenkinsfile` on `main`.
-3. Add a GitHub webhook or poll SCM.
+2. New item → Pipeline → **Pipeline script** (not from SCM) → paste the `Jenkinsfile`.
+3. A local `post-commit` hook (`ci/hooks/post-commit`) triggers job `leeward` at `http://localhost:8081`. Put `user:apiToken` in `.jenkins-token` (gitignored) so the hook can authenticate.
 4. The job installs dependencies, runs unit tests, installs Chromium, then runs Playwright. Reports land in `reports/`.
 
 Local stand-in for the same flow:
