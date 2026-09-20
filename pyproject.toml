@@ -1,0 +1,17 @@
+[project]
+name = "buy-the-dip"
+version = "1.0.0"
+description = "Find well-run public companies suppressed by the macro environment."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "e2e: browser tests that launch the Gradio app",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
