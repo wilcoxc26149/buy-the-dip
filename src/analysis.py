@@ -60,8 +60,13 @@ def build_analysis(
             "prior high, still capped so the number stays realistic."
         )
 
+    research = ""
+    if fund.research_note:
+        research = f"**SEC research.** {fund.research_note}\n\n"
+
     return (
         f"### {fund.name} ({snapshot.ticker}) — confidence {confidence:.0f}/100\n\n"
+        f"{research}"
         f"**Well-run check (quality {quality:.0f}/100).** "
         f"{fund.name} still screens as an established operator in {fund.sector.lower()}: "
         f"ROE {roe_text}, {fcf_text}, {growth_text}, and {debt_text}.\n\n"
@@ -116,4 +121,8 @@ def to_opportunity(
         spy_correlation=round(spy_correlation, 2),
         pe_ratio=snapshot.fundamentals.trailing_pe,
         roe=snapshot.fundamentals.roe,
+        extras={
+            "source": snapshot.fundamentals.source,
+            "research_note": snapshot.fundamentals.research_note,
+        },
     )

@@ -1,6 +1,6 @@
 ---
-title: Buy the Dip
-emoji: 📉
+title: Leeward
+emoji: ⛵
 colorFrom: green
 colorTo: gray
 sdk: gradio
@@ -9,16 +9,16 @@ app_file: app.py
 python_version: "3.12"
 pinned: false
 license: mit
-short_description: Quality stocks suppressed by the macro environment
+short_description: Quality companies on the cheap side of the tape
 tags:
   - finance
   - stocks
   - gradio
 ---
 
-# Buy the Dip
+# Leeward
 
-A Hugging Face Gradio app that looks for **well-run public companies** whose prices look **suppressed by the macro environment**, then returns:
+A Hugging Face Gradio app that looks for **well-run public companies** on the **sheltered side of a macro storm**, then returns:
 
 - a **buy-in** price
 - a **sell-out** price for the hold window you choose
@@ -30,7 +30,7 @@ This is a screen, not a broker and not investment advice.
 
 | Control | Meaning |
 | --- | --- |
-| Max quote price | Ignore names trading above this dollar amount |
+| Max quote price | Ignore names trading above this dollar amount. Default is $500 so large-cap quality names are not excluded by share price alone |
 | Days until you intend to sell | Hold window in days (14–365). The minimum is 14 on purpose — this is not a day-trading tool |
 | Companies to return | How many ranked names to show (1–12) |
 
@@ -44,7 +44,15 @@ This is a screen, not a broker and not investment advice.
 6. Set **sell-out** from a time-scaled recovery toward the prior high, capped so a 30-day hold cannot promise a full bounce-back.
 7. Rank by confidence, expected return, and quality.
 
-Live runs use Yahoo Finance via `yfinance`. Jenkins and Playwright use deterministic fixture data (`USE_MOCK_DATA=1`) so CI does not depend on the market being open.
+Live runs use public research endpoints, not Yahoo's company-info scrape:
+
+- **Prices:** Yahoo's public chart API (`query1.finance.yahoo.com/v8/finance/chart`)
+- **Fundamentals:** [SEC EDGAR companyfacts](https://www.sec.gov/search-filings/edgar-application-programming-interfaces) via a **local ticker → CIK map** in `src/ciks.py` (the SEC ticker-file endpoint 403s from many IPs)
+- **Optional fill-in:** `FINNHUB_API_KEY` and/or `ALPHA_VANTAGE_API_KEY` only for names SEC misses
+
+Each screen also gets an **overall grade** (A–F) for quality, dip authenticity, research coverage, levels, confidence, and sector mix.
+
+Set `MARKET_DATA_PROVIDER=yahoo` to force the older `yfinance` path. Jenkins and Playwright use deterministic fixture data (`USE_MOCK_DATA=1`) so CI does not depend on those endpoints.
 
 ## Run locally
 

@@ -16,6 +16,8 @@ class Fundamentals:
     earnings_growth: float | None = None
     trailing_pe: float | None = None
     return_on_assets: float | None = None
+    source: str = "universe"
+    research_note: str | None = None
 
 
 @dataclass

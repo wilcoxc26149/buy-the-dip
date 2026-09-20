@@ -24,11 +24,14 @@ def app_url():
 
     os.environ["USE_MOCK_DATA"] = "1"
     os.environ.setdefault("GRADIO_SERVER_NAME", "127.0.0.1")
-    os.environ.setdefault("GRADIO_SERVER_PORT", "7860")
     from app import demo, launch_app
 
     host = os.environ["GRADIO_SERVER_NAME"]
-    port = int(os.environ["GRADIO_SERVER_PORT"])
+    preferred = int(os.environ.get("GRADIO_SERVER_PORT", "7860"))
+    port = next((candidate for candidate in range(preferred, preferred + 20) if not _port_open(host, candidate)), None)
+    if port is None:
+        raise RuntimeError("No free port available for the Gradio app")
+    os.environ["GRADIO_SERVER_PORT"] = str(port)
     launch_app(prevent_thread_lock=True, server_name=host, server_port=port)
 
     deadline = time.time() + 45

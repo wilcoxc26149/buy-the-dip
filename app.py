@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import gradio as gr
 import pandas as pd
 
-from src.screener import ScreenError, screen
+from src.screener import ScreenError, screen_detailed
 from src.universe import (
     DEFAULT_COMPANIES,
     DEFAULT_HOLD_DAYS,
@@ -31,39 +31,59 @@ CSS = """
 """
 
 
+def _empty_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        columns=[
+            "Ticker",
+            "Company",
+            "Sector",
+            "Current",
+            "Buy-in",
+            "Sell-out",
+            "Hold (days)",
+            "Expected return",
+            "Confidence",
+            "Quality",
+            "Macro dip",
+        ]
+    )
+
+
+def _empty_reason(result) -> str:
+    if result.scanned == 0:
+        return (
+            "No market data came back for the quality universe. "
+            "Yahoo Finance may be rate-limiting this session — wait a minute and try again."
+        )
+    if result.priced_out and result.priced_out == result.scanned:
+        cheapest = ""
+        if result.cheapest_over_max:
+            ticker, price = result.cheapest_over_max
+            cheapest = f" The cheapest screened name is **{ticker} at ${price:,.2f}**."
+        return (
+            f"Every name in the universe trades above your max quote price."
+            f"{cheapest} Raise the max quote price and run the screen again."
+        )
+    return (
+        f"Scanned {result.scanned} companies: {result.priced_out} were over the max quote price "
+        f"and {result.quality_rejected} failed the well-run check. "
+        "Raise the max quote price to include more of the quality universe."
+    )
+
+
 def run_screen(max_quote_price, hold_days, company_count, progress=gr.Progress()):
     progress(0.15, desc="Loading market data")
     try:
-        opportunities = screen(max_quote_price, hold_days, company_count)
+        result = screen_detailed(max_quote_price, hold_days, company_count)
+        opportunities = result.opportunities
     except ScreenError as exc:
-        empty = pd.DataFrame(
-            columns=[
-                "Ticker",
-                "Company",
-                "Sector",
-                "Current",
-                "Buy-in",
-                "Sell-out",
-                "Hold (days)",
-                "Expected return",
-                "Confidence",
-                "Quality",
-                "Macro dip",
-            ]
-        )
-        return empty, f"**Could not run the screen.** {exc}", f"Status: {exc}"
+        return _empty_frame(), f"**Could not run the screen.** {exc}", f"Status: {exc}"
     except Exception as exc:  # noqa: BLE001
-        empty = pd.DataFrame()
-        return empty, f"**Data error.** {exc}", f"Status: failed ({exc})"
+        return _empty_frame(), f"**Data error.** {exc}", f"Status: failed ({exc})"
 
     progress(0.8, desc="Scoring companies")
     if not opportunities:
-        return (
-            pd.DataFrame(),
-            "No names cleared the quality, macro-dip, and max-price filters. "
-            "Raise the max quote price or lengthen the hold window and try again.",
-            "Status: 0 companies matched",
-        )
+        return _empty_frame(), _empty_reason(result), "Status: 0 companies matched"
 
     rows = [
         {
@@ -81,20 +101,33 @@ def run_screen(max_quote_price, hold_days, company_count, progress=gr.Progress()
         }
         for item in opportunities
     ]
-    analysis = "\n\n---\n\n".join(item.analysis for item in opportunities)
+    preface = ""
+    if result.grade is not None:
+        preface += result.grade.as_markdown() + "\n\n"
+    if result.shallow_backfill:
+        preface += (
+            f"_The tape is not offering a deep pullback for every slot. "
+            f"{result.shallow_backfill} of these names are less than 3% off their 52-week high, "
+            "so confidence is lower than a true macro dip._\n\n"
+        )
+    analysis = preface + "\n\n---\n\n".join(item.analysis for item in opportunities)
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    status = f"Status: {len(opportunities)} companies · updated {stamp}"
+    letter = result.grade.letter if result.grade is not None else "n/a"
+    status = (
+        f"Status: {len(opportunities)} companies · grade {letter} · scanned {result.scanned} · "
+        f"{result.priced_out} over max price · updated {stamp}"
+    )
     progress(1.0, desc="Done")
     return pd.DataFrame(rows), analysis, status
 
 
 def build_demo() -> gr.Blocks:
-    with gr.Blocks(title="Buy the Dip") as demo:
-        gr.Markdown("# Buy the Dip")
+    with gr.Blocks(title="Leeward") as demo:
+        gr.Markdown("# Leeward")
         gr.Markdown(
-            "Find **well-run public companies** whose prices look suppressed by the "
-            "macro tape, then set a **buy-in** and a **sell-out** for a hold measured "
-            "in days — not minutes.",
+            "Find **well-run public companies** on the sheltered side of a macro storm, "
+            "then set a **buy-in** and a **sell-out** for a hold measured in days — "
+            "not minutes.",
             elem_classes=["hero-sub"],
         )
         gr.Markdown(DISCLAIMER, elem_classes=["disclaimer"])
@@ -124,7 +157,7 @@ def build_demo() -> gr.Blocks:
                 elem_id="company-count",
             )
 
-        find_btn = gr.Button("Find dip opportunities", variant="primary", elem_id="find-dips-btn")
+        find_btn = gr.Button("Find leeward names", variant="primary", elem_id="find-dips-btn")
         status = gr.Markdown("Status: waiting for a screen", elem_id="status-output")
         results = gr.Dataframe(label="Ranked opportunities", elem_id="results-table", wrap=True)
         analysis = gr.Markdown(
@@ -134,9 +167,9 @@ def build_demo() -> gr.Blocks:
 
         gr.Examples(
             examples=[
-                [150, 90, 5],
-                [80, 180, 8],
-                [400, 60, 5],
+                [250, 90, 5],
+                [100, 180, 5],
+                [500, 90, 8],
             ],
             inputs=[max_quote, hold_days, company_count],
             label="Example screens",

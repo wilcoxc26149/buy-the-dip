@@ -14,6 +14,7 @@ def test_analysis_includes_levels_and_disclaimer():
             free_cash_flow=100,
             earnings_growth=0.1,
             debt_to_equity=40,
+            research_note="SEC 10-K research for Apple Inc.; ROE 40%.",
         ),
         prices=PriceHistory(close=[100, 110, 105], high=[102, 112, 108]),
         current_price=105,
@@ -36,3 +37,4 @@ def test_analysis_includes_levels_and_disclaimer():
     assert "$118.00" in text
     assert "confidence 77/100" in text
     assert "not a recommendation" in text
+    assert "SEC 10-K research" in text
